@@ -10,31 +10,9 @@ This project is a decentralized application (DApp) that allows users to claim cu
 - **Frontend**: React-based SPA using `ethers.js` for blockchain interaction. Features real-time event listening for balance updates and an built-in "Smart Switch" for network management.
 - **DevOps**: Fully containerized using Docker and Docker Compose. Environment variables manage RPC URLs and contract addresses.
 
-## Visual Artifacts (Screenshots)
-
-### 1. Wallet Connection & Gas Funding
-Verified wallet connection and initial Sepolia ETH funding for gas fees.
-![Wallet Connection](screenshots/metamusk%20account%20sepolia%20creditted.png)
-
-### 2. Transaction Request
-MetaMask interaction when requesting tokens from the local frontend service.
-![Transaction Request](screenshots/transcation%20request%20from%20localhost.png)
-
-### 3. Faucet Processing (Queue)
-Real-world verification of the claim request being handled via the Sepolia infrastructure.
-![Processing Queue](screenshots/claiming%20in%20queue%20sepolia.png)
-
-### 4. Claim Confirmation
-Successful confirmation of the token distribution on the Sepolia network.
-![Claim Confirmed](screenshots/sepolia%20claiming%20done%20.png)
-
-### 5. Final Token Balance
-Final verification showing 10 JAN tokens successfully credited to the user's balance.
-![Final Balance](screenshots/tracation%20completed%2010.png)
-
 ## Deployed Contracts (Sepolia)
-- **Token**: [`0xd2732154880d82E3dbEFb726E70da5b9f59b4789`](https://sepolia.etherscan.io/address/0xd2732154880d82E3dbEFb726E70da5b9f59b4789)
-- **Faucet**: [`0x2981bde59DF3781eAB459001DeEAA21D64f8d673`](https://sepolia.etherscan.io/address/0x2981bde59DF3781eAB459001DeEAA21D64f8d673)
+- **Token**: [`0x5FbDB2315678afecb367f032d93F642f64180aa3`](https://sepolia.etherscan.io/address/0x5FbDB2315678afecb367f032d93F642f64180aa3)
+- **Faucet**: [`0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512`](https://sepolia.etherscan.io/address/0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512)
 
 ## Quick Start
 1. **Configure Environment**:
