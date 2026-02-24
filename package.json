@@ -1,0 +1,27 @@
+{
+  "name": "token-faucet-dapp",
+  "version": "1.0.0",
+  "description": "ERC-20 Token Faucet DApp",
+  "main": "index.js",
+  "scripts": {
+    "test": "hardhat test",
+    "compile": "hardhat compile",
+    "deploy": "hardhat run scripts/deploy.js"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "hardhat": "^2.22.2"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.0.2",
+    "dotenv": "^16.4.5"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com-personal:Surya2004-janardhan/Full-Stack-ERC-20-Token-Faucet-DApp-with-Rate-Limiting-and-Wallet-Integration.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}

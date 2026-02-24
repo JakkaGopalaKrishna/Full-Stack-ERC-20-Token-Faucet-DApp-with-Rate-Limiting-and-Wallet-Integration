@@ -1,0 +1,521 @@
+Description
+Objective
+Build a complete decentralized application (DApp) that demonstrates end-to-end Web3 development capabilities by implementing a token distribution system with enforced rate limits. This task focuses on the fundamental building blocks of blockchain interaction: smart contract design with on-chain access control, wallet integration following EIP-1193 standards, and real-time state synchronization between blockchain and user interface.
+
+The faucet mechanism teaches critical blockchain concepts including transaction lifecycle management, revert handling, event emission and listening, and gas-efficient state management. By implementing cooldown periods and lifetime claim limits directly in the smart contract, you'll learn how to leverage blockchain's immutability for trustless enforcement of business rules without requiring centralized authority.
+
+This task emphasizes production-ready practices: your application must be fully containerized, expose deterministic testing interfaces, and handle all edge cases gracefully. You'll gain hands-on experience with testnet deployment, contract verification, and building user interfaces that provide clear feedback for transaction states and blockchain errors. The combination of smart contract security, frontend usability, and DevOps readiness makes this an ideal demonstration of real-world Web3 engineering skills.
+
+Core Requirements
+Smart Contract Requirements
+Token Implementation
+
+Contract must be fully ERC-20 compliant with standard transfer, approve, and allowance functions
+Token must have a fixed maximum supply defined at deployment
+Only the faucet contract can mint new tokens to user addresses
+Token contract must emit Transfer events for all balance changes
+Faucet Mechanism
+
+Faucet must distribute a fixed amount of tokens per successful claim (constant value)
+Each Ethereum address must wait exactly 24 hours between consecutive claims
+Each address must have a lifetime maximum claim limit enforced on-chain
+Contract must track last claim timestamp per address in permanent storage
+Contract must track total claimed amount per address in permanent storage
+Faucet must support pause/unpause functionality accessible only by admin
+Contract deployer must be designated as the admin with exclusive control
+Required Public Functions
+
+requestTokens() - allows eligible users to claim tokens, reverts if conditions not met
+canClaim(address user) - returns boolean indicating if address can currently claim
+remainingAllowance(address user) - returns how many tokens address can still claim in lifetime
+isPaused() - returns current pause state of the faucet
+State Visibility
+
+lastClaimAt mapping must be publicly readable to verify cooldown periods
+totalClaimed mapping must be publicly readable to verify lifetime limits
+Event Emissions
+
+TokensClaimed event must emit on every successful claim with user address, amount, and timestamp
+FaucetPaused event must emit when pause state changes with new pause status
+Mandatory Revert Conditions
+
+Transaction must revert with clear message when user attempts claim during cooldown period
+Transaction must revert with clear message when user has reached lifetime claim limit
+Transaction must revert with clear message when faucet is in paused state
+Transaction must revert with clear message when faucet has insufficient token balance
+Frontend Requirements
+User Interface Display
+
+Application must show wallet connection status (connected/disconnected state)
+Application must display the currently connected Ethereum address
+Application must show real-time token balance of connected wallet
+Application must display cooldown status (time remaining or ready to claim)
+Application must show remaining lifetime claim allowance for connected address
+Application must display clear, user-friendly error messages for failed transactions
+User Interface Functionality
+
+Application must support connecting and disconnecting Ethereum wallet
+Application must provide button to request tokens (disabled during cooldown)
+Application must update displayed balances automatically after successful claims
+Application must show loading indicators during transaction processing
+Application must handle and display wallet rejection and network errors gracefully
+Evaluation Interface Requirements (CRITICAL)
+Frontend must expose window.__EVAL__ object on global scope
+connectWallet() function must return connected address as string
+requestTokens() function must return transaction hash as string
+getBalance(address) function must return token balance as string (in base units)
+canClaim(address) function must return boolean claim eligibility
+getRemainingAllowance(address) function must return remaining claimable amount as string
+getContractAddresses() function must return object with token and faucet contract addresses
+All numeric values must be returned as strings to handle large numbers correctly
+Functions must throw descriptive errors on failure for debugging
+Deployment Requirements
+All contracts must be deployed to Sepolia testnet (or documented alternative)
+Deployed contracts must be verified on Etherscan block explorer
+Contract addresses must be documented in README with Etherscan links
+Application must be fully containerized using Docker
+Running docker compose up must start the complete application
+Frontend must be accessible at http://localhost:3000 after startup
+Application must be ready to use within 60 seconds of container start
+Frontend must expose /health endpoint returning HTTP 200 when ready
+All RPC URLs and contract addresses must be configurable via environment variables
+Implementation Guidelines
+Smart Contract Development
+Use a modern development framework like Hardhat or Foundry for contract development and testing
+Leverage OpenZeppelin contracts library for audited ERC-20 implementation and access control patterns
+Consider using ReentrancyGuard for functions that transfer tokens to prevent reentrancy attacks
+Optimize storage layout by packing variables efficiently to minimize gas costs
+Write comprehensive unit tests covering all success paths and revert conditions
+Use Solidity 0.8.x or higher to benefit from built-in overflow protection
+Frontend Architecture
+Choose any modern framework (React, Vue, Svelte) based on your preference and expertise
+Use ethers.js or viem library for blockchain interactions and wallet connection
+Implement proper error handling for all blockchain operations with user-friendly messages
+Use environment variables for contract addresses and RPC URLs to support different networks
+Consider implementing a connection state manager to handle wallet disconnection events
+Display transaction pending states with appropriate loading indicators
+Testing Strategy
+Write unit tests for all smart contract functions including edge cases
+Test revert conditions to ensure proper error messages are returned
+Verify event emissions with correct parameters in all scenarios
+Test frontend evaluation interface functions manually before submission
+Consider using Hardhat's time manipulation for testing cooldown periods
+Deployment Considerations
+Obtain testnet ETH from Sepolia faucets for deployment and testing
+Verify contracts on Etherscan immediately after deployment for transparency
+Document all deployment addresses and transaction hashes in README
+Ensure Docker image builds reproducibly with locked dependency versions
+Test complete Docker setup on clean environment before submission
+Outcomes
+Smart contract successfully deploys to testnet with verified source code on Etherscan
+ERC-20 token functions correctly with proper Transfer event emissions
+Faucet enforces 24-hour cooldown period accurately between claims per address
+Faucet enforces lifetime claim limits and reverts when exceeded
+Pause mechanism works correctly and prevents claims when activated
+Frontend connects to MetaMask or compatible Web3 wallet successfully
+User interface displays accurate real-time token balances and claim status
+Transaction errors display user-friendly messages explaining revert reasons
+Docker container starts successfully and serves functional application
+All window.__EVAL__ functions work correctly and return expected data types
+Application handles edge cases gracefully (insufficient gas, network errors, wallet rejection)
+Code demonstrates security best practices and gas optimization considerations
+Implementation Details
+Step 1: Project Setup
+Create the following project structure:
+
+submission/
+├── contracts/
+│   ├── Token.sol
+│   ├── TokenFaucet.sol
+│   └── test/
+│       └── TokenFaucet.test.js
+├── frontend/
+│   ├── src/
+│   │   ├── App.jsx (or .vue, .svelte)
+│   │   ├── components/
+│   │   ├── utils/
+│   │   │   └── contracts.js
+│   │   └── main.jsx
+│   ├── public/
+│   ├── package.json
+│   └── Dockerfile
+├── scripts/
+│   └── deploy.js
+├── docker-compose.yml
+├── .env.example
+├── hardhat.config.js (or foundry.toml)
+└── README.md
+Step 2: Smart Contract Implementation
+Token.sol - Implement ERC-20 token:
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+// Import OpenZeppelin ERC-20 implementation
+// Contract should:
+// - Inherit from ERC20
+// - Have a maximum supply constant
+// - Grant minting role to faucet address in constructor
+// - Implement mint function restricted to faucet
+// - Override decimals if needed (default 18)
+
+contract YourToken is ERC20 {
+    // Define MAX_SUPPLY constant
+    // Define minter address (faucet)
+    
+    // Constructor should:
+    // - Call ERC20 constructor with name and symbol
+    // - Set minter to faucet address
+    
+    // mint function should:
+    // - Check caller is minter
+    // - Check total supply + amount <= MAX_SUPPLY
+    // - Call _mint(to, amount)
+}
+TokenFaucet.sol - Implement faucet with rate limits:
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+// Contract should:
+// - Store reference to token contract
+// - Define FAUCET_AMOUNT constant (amount per claim)
+// - Define COOLDOWN_TIME constant (24 hours in seconds)
+// - Define MAX_CLAIM_AMOUNT constant (lifetime limit per address)
+// - Have admin address (deployer)
+// - Have paused boolean state
+// - Have lastClaimAt mapping (address => uint256)
+// - Have totalClaimed mapping (address => uint256)
+
+contract TokenFaucet {
+    // State variables as described above
+    
+    // Events:
+    // event TokensClaimed(address indexed user, uint256 amount, uint256 timestamp);
+    // event FaucetPaused(bool paused);
+    
+    // Constructor should:
+    // - Accept token contract address
+    // - Set admin to msg.sender
+    // - Initialize paused to false
+    
+    // requestTokens() should:
+    // - Check faucet is not paused
+    // - Check canClaim(msg.sender) returns true
+    // - Check remaining allowance >= FAUCET_AMOUNT
+    // - Update lastClaimAt[msg.sender] to block.timestamp
+    // - Update totalClaimed[msg.sender] += FAUCET_AMOUNT
+    // - Call token.mint(msg.sender, FAUCET_AMOUNT)
+    // - Emit TokensClaimed event
+    // - Revert with clear messages on any failure
+    
+    // canClaim(address user) should:
+    // - Return false if paused
+    // - Return false if block.timestamp < lastClaimAt[user] + COOLDOWN_TIME
+    // - Return false if totalClaimed[user] >= MAX_CLAIM_AMOUNT
+    // - Return true otherwise
+    
+    // remainingAllowance(address user) should:
+    // - Calculate MAX_CLAIM_AMOUNT - totalClaimed[user]
+    // - Return 0 if result is negative
+    
+    // setPaused(bool _paused) should:
+    // - Check msg.sender == admin
+    // - Set paused = _paused
+    // - Emit FaucetPaused event
+    
+    // isPaused() should:
+    // - Return current paused state
+}
+Step 3: Smart Contract Testing
+Create comprehensive test suite in contracts/test/TokenFaucet.test.js:
+
+// Tests should cover:
+// 1. Token deployment and initial state
+// 2. Faucet deployment and configuration
+// 3. Successful token claim
+// 4. Cooldown enforcement (immediate re-claim reverts)
+// 5. Lifetime limit enforcement
+// 6. Pause mechanism
+// 7. Admin-only pause function
+// 8. Event emissions
+// 9. Edge cases (zero balances, maximum values)
+// 10. Multiple users claiming independently
+
+// Use Hardhat or Foundry testing utilities
+// Use time manipulation to test cooldown periods
+// Verify all revert messages are clear and helpful
+Step 4: Deployment Script
+Create scripts/deploy.js:
+
+// Deployment script should:
+// 1. Deploy Token contract first
+// 2. Deploy TokenFaucet with token address
+// 3. Grant minting role to faucet in token contract
+// 4. Log all deployment addresses
+// 5. Verify contracts on Etherscan (use hardhat-verify plugin)
+// 6. Save deployment addresses to file for frontend
+
+// Include error handling and transaction confirmation waits
+// Use environment variables for private keys and RPC URLs
+Step 5: Frontend Implementation
+Wallet Integration (src/utils/wallet.js):
+
+// Implement wallet connection logic:
+// - Check for window.ethereum (MetaMask/compatible wallet)
+// - Request account access using eth_requestAccounts
+// - Listen for account and chain changes
+// - Handle wallet disconnection
+// - Expose connection state to components
+Contract Interaction (src/utils/contracts.js):
+
+// Import ethers or viem
+// Import contract ABIs from compilation artifacts
+// Load contract addresses from environment variables
+
+// Implement functions:
+// - getProvider() - connect to RPC
+// - getSigner() - get signer from wallet
+// - getTokenContract() - return token contract instance
+// - getFaucetContract() - return faucet contract instance
+// - getBalance(address) - query token balance
+// - requestTokens() - call faucet.requestTokens()
+// - canClaim(address) - query claim eligibility
+// - getRemainingAllowance(address) - query remaining allowance
+// - listenToEvents() - set up event listeners for TokensClaimed
+Main Application Component:
+
+// Component should:
+// - Show connect wallet button when disconnected
+// - Display connected address when connected
+// - Query and display token balance on load and after claims
+// - Query and display claim eligibility status
+// - Show remaining allowance
+// - Display countdown timer for cooldown (calculate from lastClaimAt)
+// - Show claim button (disabled during cooldown or when ineligible)
+// - Handle claim button click:
+//   - Show loading state
+//   - Call requestTokens()
+//   - Wait for transaction confirmation
+//   - Update all displayed values
+//   - Show success message
+//   - Handle errors and show user-friendly messages
+// - Refresh data periodically or on events
+Evaluation Interface (src/utils/eval.js):
+
+// Expose on window object:
+window.__EVAL__ = {
+  connectWallet: async () => {
+    // Trigger wallet connection
+    // Return connected address as string
+    // Throw error if connection fails
+  },
+  
+  requestTokens: async () => {
+    // Call faucet.requestTokens()
+    // Wait for transaction to be mined
+    // Return transaction hash as string
+    // Throw descriptive error on failure
+  },
+  
+  getBalance: async (address) => {
+    // Query token.balanceOf(address)
+    // Return balance as string (no decimal conversion)
+    // Handle errors gracefully
+  },
+  
+  canClaim: async (address) => {
+    // Query faucet.canClaim(address)
+    // Return boolean
+  },
+  
+  getRemainingAllowance: async (address) => {
+    // Query faucet.remainingAllowance(address)
+    // Return allowance as string
+  },
+  
+  getContractAddresses: async () => {
+    // Return object: { token: "0x...", faucet: "0x..." }
+  }
+};
+Health Endpoint:
+
+Implement /health route that returns HTTP 200 when application is ready.
+
+Step 6: Docker Configuration
+frontend/Dockerfile:
+
+# Use Node.js base image
+# Copy package files and install dependencies
+# Copy source code
+# Build application for production
+# Use nginx or node to serve
+# Expose port 3000
+# Include health check configuration
+docker-compose.yml:
+
+version: '3.8'
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      # Load from .env file
+      - VITE_RPC_URL=${VITE_RPC_URL}
+      - VITE_TOKEN_ADDRESS=${VITE_TOKEN_ADDRESS}
+      - VITE_FAUCET_ADDRESS=${VITE_FAUCET_ADDRESS}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+.env.example:
+
+VITE_RPC_URL=https://sepolia.infura.io/v3/YOUR_INFURA_KEY
+VITE_TOKEN_ADDRESS=0xYourDeployedTokenAddress
+VITE_FAUCET_ADDRESS=0xYourDeployedFaucetAddress
+Step 7: Documentation
+README.md must include:
+
+Project Overview - Brief description of the faucet DApp
+Architecture - Explanation of contract design and frontend structure
+Deployed Contracts - Sepolia addresses with Etherscan links
+Quick Start:
+cp .env.example .env
+# Edit .env with your values
+docker compose up
+# Access at http://localhost:3000
+Configuration - Environment variables explained
+Design Decisions:
+Faucet amount per request and justification
+Lifetime claim limit and rationale
+Token total supply reasoning
+Testing Approach - How you tested the contracts and frontend
+Security Considerations - What security measures you implemented
+Known Limitations - Any constraints or future improvements
+Common Mistakes To Avoid
+Reentrancy vulnerability: Always update state before external calls (use checks-effects-interactions pattern)
+Integer overflow: While Solidity 0.8+ has built-in protection, be mindful of arithmetic operations
+Insufficient access control: Ensure only admin can pause and only faucet can mint tokens
+Gas inefficiency: Avoid unnecessary storage writes; pack storage variables efficiently
+Missing error messages: All reverts should have clear, descriptive error messages
+Hardcoded values: Contract addresses and RPC URLs must come from environment variables
+Poor error handling in frontend: Always catch and display blockchain errors to users
+Missing loading states: Users should see feedback during transaction processing
+Not testing cooldown logic: Use time manipulation in tests to verify 24-hour periods
+Forgetting to expose evaluation interface: window.__EVAL__ is critical for automated testing
+Docker not production-ready: Container should work immediately without manual intervention
+Missing health endpoint: Frontend must expose /health for container readiness checks
+Type mismatches in eval interface: Return strings for numbers, not native BigInt or number types
+Unverified contracts: Always verify on Etherscan for transparency and evaluation
+Missing event listeners: Frontend should update when blockchain state changes
+FAQ
+Q: Which testnet should I use? A: Sepolia is recommended. If you use a different testnet, clearly document it in your README and explain why.
+
+Q: What values should I use for faucet amount, cooldown, and lifetime limit? A: You choose these values. Document your reasoning in the README. Consider: typical token decimals (18), user experience (not too restrictive), and gas costs.
+
+Q: Can I use a framework other than React? A: Yes, you can use Vue, Svelte, or vanilla JavaScript. The evaluation interface (window.__EVAL__) must work regardless of framework.
+
+Q: Do I need to implement admin panel for pause functionality? A: No, the pause function just needs to exist and be tested. You can demonstrate it works through tests or direct contract interaction.
+
+Q: How do I test the 24-hour cooldown without waiting? A: Use time manipulation functions in your testing framework (Hardhat's evm_increaseTime or Foundry's vm.warp).
+
+Q: Should the token be mintable indefinitely? A: The token should have a maximum supply. The faucet should check that minting won't exceed this before attempting to mint.
+
+Q: What happens if the faucet runs out of tokens? A: The requestTokens function should revert with a clear error message if the faucet cannot mint more tokens due to max supply constraints.
+
+Q: Can I add additional features like referral bonuses or multiple token types? A: Focus on meeting all core requirements first. Additional features are welcome but ensure they don't break the required evaluation interface.
+
+Q: How detailed should error messages be? A: Error messages should clearly explain what went wrong. Examples: "Cooldown period not elapsed", "Lifetime claim limit reached", "Faucet is paused".
+
+Q: Do I need to implement multi-chain support? A: No, single testnet deployment is sufficient. Focus on making the core functionality robust and well-tested.
+
+
+
+
+Submission Instructions
+Submit your complete solution as a public GitHub repository containing all code, configuration, and documentation.
+
+Repository Requirements
+Your repository must include:
+
+All Source Code
+Smart contracts in contracts/ directory
+Frontend application in frontend/ directory
+Deployment scripts in scripts/ directory
+Test files with comprehensive coverage
+Configuration Files
+docker-compose.yml in repository root
+.env.example with all required environment variables documented
+Hardhat or Foundry configuration files
+Frontend build configuration
+Documentation & Visual Artifacts
+Complete README.md with all sections specified in Implementation Details
+Screenshots of your working application embedded in README showing:
+Wallet connection interface
+Token balance display
+Successful claim transaction
+Error states (cooldown, limit reached, paused)
+Transaction confirmation flow
+Video demonstration (2-5 minutes) showing the complete user journey:
+Connecting wallet to the dApp
+Checking initial balance and claim eligibility
+Successfully claiming tokens
+Attempting to claim during cooldown (showing error)
+Balance updates after transaction confirmation
+Architecture diagram illustrating contract interactions and frontend flow
+Deployed contract addresses with Etherscan verification links
+Step-by-step instructions for running locally with Docker
+Creating Effective Demonstrations
+Screenshots: Capture high-quality screenshots showing your application in action. Include captions explaining what each screenshot demonstrates. Place them in a screenshots/ directory and embed them in your README using relative paths.
+
+Video Demo: Record a screen capture demonstrating your dApp's functionality. Show both successful workflows and error handling. Upload to YouTube, Loom, or include directly in your repository (if file size permits). Narration or text overlays explaining each step are highly recommended.
+
+Architecture Diagrams: Create a visual representation of your system architecture showing how components interact. Tools like Excalidraw, draw.io, or Mermaid diagrams work well.
+
+Deployment Verification
+Before submission, verify that:
+
+ Contracts are deployed to Sepolia (or documented alternative testnet)
+ All contracts are verified on Etherscan
+ Contract addresses are documented in README with links
+ docker compose up successfully starts the application
+ Application is accessible at http://localhost:3000
+ /health endpoint returns HTTP 200
+ All window.__EVAL__ functions work correctly
+ Wallet connection works with MetaMask
+ Token claiming works end-to-end
+ Error states display properly
+ Screenshots are embedded in README and render correctly
+ Video demonstration link is accessible and plays properly
+ Architecture diagram is clear and properly formatted
+Submission Portal
+Submit your GitHub repository URL through the designated submission portal. Ensure your repository is public and accessible. Make sure all visual artifacts (screenshots, videos, diagrams) are viewable without requiring authentication.
+
+Evaluation Timeline
+Your submission will be evaluated for:
+
+Smart contract correctness and security
+Frontend functionality and user experience
+Code quality and documentation
+Docker deployment reliability
+Evaluation interface completeness
+Quality of visual demonstrations and documentation
+Evaluation typically takes 5-7 business days after submission deadline. Well-documented submissions with clear visual demonstrations facilitate faster and more thorough evaluation.
+
+Evaluation Overview
+Your submission will be comprehensively evaluated across multiple dimensions to assess your full-stack Web3 development capabilities.
+
+Smart Contract Evaluation: We will deploy your contracts to a test environment and verify all functional requirements. Your contracts will be tested for correct ERC-20 implementation, accurate rate limit enforcement (cooldown and lifetime limits), proper pause functionality, and correct event emissions. We will attempt various attack vectors including reentrancy, access control bypass, and overflow conditions to verify security. Gas usage will be measured for all functions with particular attention to the requestTokens operation.
+
+Frontend Integration Testing: We will run your Docker container and interact with your application through both the user interface and the programmatic evaluation interface. The window.__EVAL__ functions will be called programmatically to verify they return correct data types and values. We will test wallet connection flows, transaction submission and monitoring, error handling for various failure scenarios (user rejection, insufficient gas, revert conditions), and UI responsiveness during blockchain operations.
+
+Automated Verification: Your application will be tested for deployment reliability by running docker compose up on a clean system and verifying the application becomes available within 60 seconds. We will verify the /health endpoint, test all evaluation interface functions with various scenarios (successful claims, cooldown violations, limit exceedances, paused state), and verify error messages are clear and actionable.
+
+Code Quality Review: Your smart contract code will be reviewed for security best practices, gas optimization techniques, code organization and readability, comprehensive test coverage, and proper documentation. Frontend code will be evaluated for error handling robustness, state management patterns, wallet integration implementation, and code maintainability.
+
+Documentation Assessment: Your README and code documentation will be reviewed for completeness, clarity of architecture explanations, justification of design decisions (token economics, security measures), deployment instructions accuracy, and overall professionalism.
+
+Submission Questionnaire: Your answers to the conceptual questions will be evaluated to understand your decision-making process, security awareness, understanding of blockchain fundamentals, scalability considerations, and problem-solving approach. These responses help us assess not just what you built, but why you built it that way and what trade-offs you considered.
+
